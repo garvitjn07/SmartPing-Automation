@@ -1,4 +1,7 @@
 // require("dotenv").config(); // Load environment variables from .env file
+const fs = require("fs");
+const path = require("path");
+
 const { setHeadlessWhen, setCommonPlugins } = require("@codeceptjs/configure");
 const chunkPlan = require("./util/chunkPlan");
 
@@ -20,6 +23,17 @@ const chunkIndex = chunkPlan.chunkIndex();
 const chunkName = chunkPlan.chunkName(chunkIndex);
 const outputDir = chunkPlan.chunkOutputDir(chunkIndex);
 
+// Start every run from a clean chunk folder so the merge step finds exactly
+// one report per chunk instead of the leftovers of previous runs. CodeceptJS'
+// own `emptyOutputFolder` is not used for this: it shells out to
+// `rm -rf <dir>/*` without quoting the path, so on a project path containing a
+// space - as this one does - the command falls apart and silently clears
+// nothing. Recreating the folder here also guarantees it exists before the
+// first screenshot is written into it.
+const absoluteOutputDir = path.resolve(__dirname, outputDir);
+fs.rmSync(absoluteOutputDir, { recursive: true, force: true });
+fs.mkdirSync(absoluteOutputDir, { recursive: true });
+
 /** @type {CodeceptJS.MainConfig} */
 exports.config = {
   // each test must not run longer than 15 mins - browser close time
@@ -31,9 +45,8 @@ exports.config = {
   tests: ["testcases/SmartPing_test.js"],
   output: `./${outputDir}`,
 
-  // Start every run from a clean chunk folder so the merge step finds exactly
-  // one report per chunk instead of the leftovers of previous runs.
-  emptyOutputFolder: true,
+  // The chunk folder is emptied above, before CodeceptJS starts.
+  emptyOutputFolder: false,
 
   helpers: {
     WebDriver: {

@@ -168,18 +168,32 @@ module.exports = {
   },
 
   /**
+   * Absolute path of the folder this chunk writes its screenshots into.
+   * @returns {string} The output folder.
+   */
+  outputDir() {
+    return (
+      global.output_dir || path.join(process.cwd(), "output-smartping")
+    );
+  },
+
+  /**
    * Saves a full-page screenshot and embeds it in the Mochawesome report.
    * @param {string} fileName - Screenshot file name inside the output folder.
    * @param {string} title - Caption shown above the image in the report.
    */
   async attachFullPageScreenshot(fileName, title) {
+    // WebdriverIO refuses to write a screenshot into a folder that is not
+    // there, and reports every failed access check as "directory doesn't
+    // exist", so the folder is recreated here rather than trusted to have
+    // survived since the run started.
+    const outputDir = this.outputDir();
+    fs.mkdirSync(outputDir, { recursive: true });
+
     await I.saveScreenshot(fileName, true);
 
     // Embed the image in the report instead of linking to a browser-inaccessible file path.
-    const screenshotFile = path.join(
-      global.output_dir || path.join(process.cwd(), "output-smartping"),
-      fileName,
-    );
+    const screenshotFile = path.join(outputDir, fileName);
     const screenshotData = fs.readFileSync(screenshotFile).toString("base64");
     await I.addMochawesomeContext({
       title,
