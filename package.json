@@ -1,0 +1,34 @@
+{
+  "name": "stive_automation",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:report": "npx codeceptjs run --steps --reporter mochawesome",
+    "test:all": "codeceptjs run --steps --reporter mochawesome --reporter-options reportDir=output,reportFilename=report,inlineAssets=true,overwrite=false",
+    "test:single-file": "npm run _test:single-file --silent",
+    "_test:single-file": "TENANT_NAME=$npm_config_tenant UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME npx codeceptjs run $npm_config_filepath --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run $npm_config_filepath --reporter mochawesome --grep @${UPPER_TAG}_Tenant",
+    "test:all-files": "npm run _test:all-files --silent",
+    "_test:all-files": "TENANT_NAME=$npm_config_tenant UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant",
+    "test:multiple-files": "npm run _test:multiple-files --silent",
+    "_test:multiple-files": "TENANT_NAME=$npm_config_tenant UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME npx codeceptjs run-multiple default --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run-multiple default --reporter mochawesome --grep @${UPPER_TAG}_Tenant",
+    "test:by-usertype": "npm run _test:by-usertype --silent",
+    "_test:by-usertype": "TENANT_NAME=$npm_config_tenant USER_TYPE=$npm_config_user UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME USER_TYPE=$USER_TYPE npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
+  "dependencies": {
+    "codeceptjs": "^3.7.3",
+    "cross-env": "^7.0.3",
+    "csv-parse": "^5.6.0",
+    "dotenv": "^17.1.0",
+    "googleapis": "^148.0.0",
+    "js-base64": "^3.7.7",
+    "mochawesome": "7.1.3",
+    "webdriverio": "^9.12.5",
+    "xlsx": "^0.18.5"
+  }
+}
