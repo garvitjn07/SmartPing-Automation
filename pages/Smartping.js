@@ -10,7 +10,9 @@ const credentials = {
 const waitTime = {
   pageLoad: 20,
   // Longest the AI compliance result may take before the test case fails.
-  aiReview: 30,
+  // The review is a model call with variable latency; 30s was too tight and
+  // timed out on templates that did eventually return.
+  aiReview: 60,
   // Pause requested between the Overview and Findings captures.
   betweenTabs: 5,
   // Longest a tab panel may take to render after the tab is selected.

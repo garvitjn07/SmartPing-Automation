@@ -63,10 +63,11 @@ output-smartping/
 After **Check compliance** runs, the result screen is split into two tabs. Each
 test case captures both:
 
-1. The suite waits up to **30 seconds** for the **Overview** / **Findings** tabs
+1. The suite waits up to **60 seconds** for the **Overview** / **Findings** tabs
    to appear. They only render once the AI review has returned, so they are the
-   signal that the result is ready. **If they do not appear within 30 seconds the
-   test case fails** — there is no fixed sleep here.
+   signal that the result is ready. **If they do not appear within 60 seconds the
+   test case fails** — there is no fixed sleep here, so a fast review proceeds
+   immediately.
 2. The **Overview** tab is selected, its panel is waited for, and a full-page
    screenshot is saved as `<TCID>-overview-full-page.png`.
 3. The suite waits 5 seconds.
