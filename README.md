@@ -58,6 +58,45 @@ The generated reports and screenshots will be stored under:
 output-smartping/
 ```
 
+## Compliance Result Capture
+
+After **Check compliance** runs, the result screen is split into two tabs. Each
+test case captures both:
+
+1. The **Overview** tab is selected and a full-page screenshot is saved as
+   `<TCID>-overview-full-page.png`.
+2. The suite waits 5 seconds.
+3. The **Findings** tab is selected and saved as `<TCID>-findings-full-page.png`.
+
+Both images are embedded in the Mochawesome report for that test case. If the AI
+returns no overview data the tab strip is not rendered, and a single
+`<TCID>-full-page.png` is captured instead.
+
+## Verdict Summary
+
+The Verdict card reports a status of `PASS`, `WARN` or `FAIL`. That status is:
+
+- shown as a step and as a **Verdict status** context entry in the HTML report,
+  and used in the caption of both screenshots;
+- collected into a spreadsheet written at the end of the run:
+
+```text
+output-smartping/smartping-verdict-summary.xlsx
+```
+
+The sheet is named `Verdict Summary` and has these columns:
+
+| Column | Usage |
+| --- | --- |
+| `TCID` | Test case id from the workbook |
+| `Entity Name` | Entity / brand under review |
+| `Header/CLI associated` | Header used for the submission |
+| `Verdict` | `PASS`, `WARN`, `FAIL`, or `N/A` when unreadable |
+| `Execution Status` | `passed` or `failed` for the scenario itself |
+| `Notes` | Failure message when the scenario failed |
+
+A verdict breakdown is also printed to the console when the suite finishes.
+
 ## Important Notes
 
 - The automation uses a workbook-driven flow.
@@ -81,9 +120,10 @@ Expected columns in the workbook:
 - `testcases/SmartPing_test.js` - main test flow
 - `pages/Smartping.js` - page object / reusable actions
 - `util/CommonUtils.js` - workbook loading helpers
+- `util/helpers/VerdictSummary.js` - collects verdicts and writes the summary sheet
 - `steps_file.js` - custom step helpers
 - `codecept.conf.js` - CodeceptJS configuration
-- `output-smartping/` - generated reports and screenshots
+- `output-smartping/` - generated reports, screenshots, and verdict summary
 
 ## Git Workflow
 
