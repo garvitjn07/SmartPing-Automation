@@ -9,11 +9,14 @@ const credentials = {
 
 const waitTime = {
   pageLoad: 20,
-  aiReview: 20,
+  // Longest the AI compliance result may take before the test case fails.
+  aiReview: 30,
   // Pause requested between the Overview and Findings captures.
   betweenTabs: 5,
-  // Short settle after switching tabs so the panel is fully painted.
-  tabRender: 2,
+  // Longest a tab panel may take to render after the tab is selected.
+  tabPanel: 10,
+  // Short settle so the panel is fully painted before the screenshot.
+  paintSettle: 1,
 };
 
 // Verdict values the Compliance screen can report.
@@ -52,6 +55,11 @@ module.exports = {
     tabs: {
       overview: "//button[normalize-space()='Overview']",
       findings: "//button[normalize-space()='Findings']",
+    },
+    // Content markers proving the selected tab panel has rendered.
+    panels: {
+      overview: "//h3[starts-with(normalize-space(), 'Entities Found')]",
+      findings: "//h3[normalize-space()='Findings']",
     },
     // PASS / WARN / FAIL chip rendered next to the "Verdict" heading.
     verdictBadge:
@@ -94,6 +102,17 @@ module.exports = {
     await I.fillValue(this.locators.inputs.principalEntity, entityName);
     await I.fillValue(this.locators.inputs.header, data.header);
     await I.fillValue(this.locators.inputs.message, data.message);
+
+    // Record what went into each field rather than the individual UI steps.
+    await I.addMochawesomeContext({
+      title: "Template details entered",
+      value: {
+        "Template Name": templateName,
+        "Principal Entity (Brand)": entityName,
+        "Header(s) Associated": data.header,
+        "Message Content": data.message,
+      },
+    });
 
     // Variable 1-4 support is temporarily disabled and will be enabled later.
     // for (let number = 1; number <= 4; number += 1) {
@@ -146,15 +165,52 @@ module.exports = {
   },
 
   /**
+   * Selects a result tab, waits for its panel to render, and captures it.
+   * @param {string} tab - "overview" or "findings".
+   * @param {string} fileName - Screenshot file name.
+   * @param {string} title - Caption shown above the image in the report.
+   */
+  async captureResultTab(tab, fileName, title) {
+    await I.clickElement(this.locators.tabs[tab]);
+    await I.waitForElement(this.locators.panels[tab], waitTime.tabPanel);
+    await I.wait(waitTime.paintSettle);
+    await this.attachFullPageScreenshot(fileName, title);
+  },
+
+  /**
    * Runs the AI compliance check, then captures the Overview tab, waits, and
    * captures the Findings tab. Both images are attached to the report.
+   *
+   * The result is waited for by element rather than by a fixed pause: if the
+   * Overview / Findings tabs do not appear within the timeout the test case
+   * fails.
    * @param {string} screenshotName - Test case id used as the file name prefix.
    * @returns {Promise<string>} The verdict status for the report summary.
+   * @throws {Error} When the AI review result does not load in time.
    */
   async runAiReview(screenshotName) {
-    // Compliance opens a separate results view, so wait before capturing it.
     await I.clickElement(this.locators.buttons.checkCompliance);
-    await I.wait(waitTime.aiReview);
+
+    // The tabs only render once the AI review has returned, so they are the
+    // signal that the result is ready.
+    const resultLoaded = await tryTo(() =>
+      I.waitForElement(this.locators.tabs.overview, waitTime.aiReview),
+    );
+
+    if (!resultLoaded) {
+      await I.addMochawesomeContext({
+        title: "Compliance check",
+        value: `Clicked "Check compliance", but the Overview / Findings tabs did not appear within ${waitTime.aiReview} seconds.`,
+      });
+      throw new Error(
+        `AI review result did not load within ${waitTime.aiReview} seconds`,
+      );
+    }
+
+    await I.addMochawesomeContext({
+      title: "Compliance check",
+      value: `Clicked "Check compliance"; the Overview / Findings tabs appeared within ${waitTime.aiReview} seconds.`,
+    });
 
     const verdict = await this.grabVerdictStatus();
     await I.say(`Verdict: ${verdict}`);
@@ -163,32 +219,21 @@ module.exports = {
       value: verdict,
     });
 
-    // The tab strip only renders when the AI returns overview data; without it
-    // the result stays on a single scrollable page.
-    const hasTabs =
-      (await I.grabNumberOfVisibleElements(this.locators.tabs.overview)) > 0;
-
-    if (!hasTabs) {
-      await this.attachFullPageScreenshot(
-        `${screenshotName}-full-page.png`,
-        `AI review full-page screenshot — verdict: ${verdict}`,
-      );
-      return verdict;
-    }
-
-    await I.clickElement(this.locators.tabs.overview);
-    await I.wait(waitTime.tabRender);
-    await this.attachFullPageScreenshot(
+    await this.captureResultTab(
+      "overview",
       `${screenshotName}-overview-full-page.png`,
       `Overview tab — verdict: ${verdict}`,
     );
 
     // Requested pause between the two captures.
     await I.wait(waitTime.betweenTabs);
+    await I.addMochawesomeContext({
+      title: "Tab switch",
+      value: `Waited ${waitTime.betweenTabs} seconds after the Overview capture, then opened the Findings tab.`,
+    });
 
-    await I.clickElement(this.locators.tabs.findings);
-    await I.wait(waitTime.tabRender);
-    await this.attachFullPageScreenshot(
+    await this.captureResultTab(
+      "findings",
       `${screenshotName}-findings-full-page.png`,
       `Findings tab — verdict: ${verdict}`,
     );

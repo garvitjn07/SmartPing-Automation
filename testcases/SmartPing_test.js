@@ -33,7 +33,7 @@ AfterSuite(async () => {
 // Define one Codecept scenario per worksheet row so Mochawesome records each
 // template review as a separate test case.
 // Temporary run limit: exercise the first five worksheet rows only. (.slice(0, 3).)
-smartpingRows.forEach((current, rowIndex) => {
+smartpingRows.slice(0, 3).forEach((current, rowIndex) => {
   const testCaseId =
     current.TCID || current.testCaseId || `smartping-row-${rowIndex + 2}`;
 

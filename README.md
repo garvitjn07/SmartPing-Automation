@@ -63,14 +63,30 @@ output-smartping/
 After **Check compliance** runs, the result screen is split into two tabs. Each
 test case captures both:
 
-1. The **Overview** tab is selected and a full-page screenshot is saved as
-   `<TCID>-overview-full-page.png`.
-2. The suite waits 5 seconds.
-3. The **Findings** tab is selected and saved as `<TCID>-findings-full-page.png`.
+1. The suite waits up to **30 seconds** for the **Overview** / **Findings** tabs
+   to appear. They only render once the AI review has returned, so they are the
+   signal that the result is ready. **If they do not appear within 30 seconds the
+   test case fails** — there is no fixed sleep here.
+2. The **Overview** tab is selected, its panel is waited for, and a full-page
+   screenshot is saved as `<TCID>-overview-full-page.png`.
+3. The suite waits 5 seconds.
+4. The **Findings** tab is selected and saved as `<TCID>-findings-full-page.png`.
 
-Both images are embedded in the Mochawesome report for that test case. If the AI
-returns no overview data the tab strip is not rendered, and a single
-`<TCID>-full-page.png` is captured instead.
+Both images are embedded in the Mochawesome report for that test case.
+
+## Report Contents
+
+The report deliberately records what the test did, not each underlying
+wait/click. Every test case contains:
+
+| Entry | Contents |
+| --- | --- |
+| `Template details entered` | The value filled into each input field |
+| `Compliance check` | Whether the result loaded inside the timeout |
+| `Verdict status` | `PASS`, `WARN` or `FAIL` |
+| `Overview tab — verdict: <status>` | Overview screenshot |
+| `Tab switch` | The 5 second pause between captures |
+| `Findings tab — verdict: <status>` | Findings screenshot |
 
 ## Verdict Summary
 
