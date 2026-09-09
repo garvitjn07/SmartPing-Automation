@@ -36,11 +36,10 @@ exports.config = {
       remoteFileUpload: false,
     },
 
+    // Report entries are added explicitly from the page object, so every
+    // low-level wait/click is deliberately kept out of the report.
     Mochawesome: {
       uniqueScreenshotNames: false,
-    },
-    Report: {
-      require: "./util/helpers/Report.js",
     },
   },
   include: {
