@@ -49,6 +49,27 @@ function rowLimit() {
   return parsed;
 }
 
+/**
+ * Cap on how many rows each chunk runs from its own range (ROWS_PER_CHUNK).
+ * Unlike ROW_LIMIT this keeps the real 5 x 15 split intact and just takes the
+ * first N rows of each slice, so ROWS_PER_CHUNK=1 runs the first row of every
+ * chunk - TC_01, TC_16, TC_31, TC_46, TC_61 - rather than TC_01 to TC_05.
+ * @returns {number|null} The per-chunk cap, or null when the chunk runs in full.
+ */
+function rowsPerChunk() {
+  const raw = process.env.ROWS_PER_CHUNK;
+  if (raw === undefined || raw === "") return null;
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(
+      `Invalid ROWS_PER_CHUNK="${raw}". Expected a positive integer.`,
+    );
+  }
+
+  return parsed;
+}
+
 /** Zero-based index of the chunk this process owns (CHUNK, default 0). */
 function chunkIndex() {
   const raw = process.env.CHUNK === undefined || process.env.CHUNK === "" ? "0" : process.env.CHUNK;
@@ -106,6 +127,7 @@ module.exports = {
   chunkCount,
   chunkIndex,
   rowLimit,
+  rowsPerChunk,
   chunkName,
   chunkOutputDir,
   chunkReportName,

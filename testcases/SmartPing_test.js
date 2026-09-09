@@ -28,7 +28,19 @@ const { startIndex, endIndex } = chunkPlan.rangeFor(
   chunkIndex,
   smartpingRows.length,
 );
-const chunkRows = smartpingRows.slice(startIndex, endIndex);
+const fullChunkRows = smartpingRows.slice(startIndex, endIndex);
+
+// ROWS_PER_CHUNK caps how many rows this chunk runs from its own range, which
+// keeps the real 5 x 15 split intact: ROWS_PER_CHUNK=1 runs the first row of
+// every chunk - TC_01, TC_16, TC_31, TC_46, TC_61 - so a smoke run still puts
+// one browser on each slice instead of crowding the first five rows into it.
+const rowsPerChunk = chunkPlan.rowsPerChunk();
+const chunkRows = rowsPerChunk
+  ? fullChunkRows.slice(0, rowsPerChunk)
+  : fullChunkRows;
+
+// The last row this chunk actually runs, which is what the report should name.
+const lastIndex = startIndex + chunkRows.length;
 
 // A low ROW_LIMIT can leave the higher chunks with nothing to do - five chunks
 // over three rows fills the first three only. Such a chunk registers no
@@ -43,21 +55,24 @@ VerdictSummary.describeChunk({
   index: chunkIndex,
   name: chunkPlan.chunkName(chunkIndex),
   startIndex,
-  endIndex,
+  endIndex: lastIndex,
 });
 
 // The row range is part of the feature name so the merged report reads as one
-// continuous 1-75 sequence instead of five identically titled suites.
+// continuous sequence instead of five identically titled suites. It names the
+// rows that actually ran, not the full range, so a capped run is not
+// mislabelled.
 Feature(
   chunkRows.length
-    ? `Smartping AI Review Test Suite - rows ${startIndex + 1}-${endIndex}`
+    ? `Smartping AI Review Test Suite - rows ${startIndex + 1}-${lastIndex}`
     : `Smartping AI Review Test Suite - ${chunkPlan.chunkName(chunkIndex)} (no rows)`,
 );
 
 BeforeSuite(async () => {
   // Authenticate once and reuse the browser session for every row in the chunk.
   console.log(
-    `[${chunkLabel}] rows ${startIndex + 1}-${endIndex} (${chunkRows.length} test cases)` +
+    `[${chunkLabel}] rows ${startIndex + 1}-${lastIndex} (${chunkRows.length} test cases)` +
+      (rowsPerChunk ? ` [ROWS_PER_CHUNK=${rowsPerChunk} of ${fullChunkRows.length}]` : "") +
       (rowLimit ? ` [ROW_LIMIT=${rowLimit} of ${worksheetRows.length}]` : ""),
   );
   await smartpingPage.login();

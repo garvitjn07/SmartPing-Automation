@@ -13,7 +13,8 @@
     "test:chunk4": "cross-env CHUNK=3 codeceptjs run --config codecept.conf.js",
     "test:chunk5": "cross-env CHUNK=4 codeceptjs run --config codecept.conf.js",
     "test:single": "cross-env CHUNK=0 CHUNK_COUNT=1 codeceptjs run --config codecept.conf.js",
-    "test:smoke": "cross-env CHUNK=0 CHUNK_COUNT=1 ROW_LIMIT=5 codeceptjs run --config codecept.conf.js"
+    "test:smoke": "cross-env CHUNK=0 CHUNK_COUNT=1 ROW_LIMIT=5 codeceptjs run --config codecept.conf.js",
+    "test:smoke:parallel": "cross-env ROWS_PER_CHUNK=1 node scripts/run-parallel.js"
   },
   "keywords": [],
   "author": "",

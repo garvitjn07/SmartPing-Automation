@@ -106,14 +106,46 @@ npm run test:single
 
 ### Running a few rows for testing
 
-`ROW_LIMIT` trims the workbook *before* it is split, so it caps the whole run
-rather than each chunk. The shortcut runs the first five rows in one process,
-in order:
+There are two caps, and they trim at different points:
+
+| Variable | Trims | Use it for |
+| --- | --- | --- |
+| `ROWS_PER_CHUNK` | the first N rows **of each chunk's own range** | smoke-testing the parallel run |
+| `ROW_LIMIT` | the first N rows **of the workbook**, before splitting | shortening a single-process run |
+
+To put all five chunks on the wire with one row each - the fastest full check
+of the parallel split and the merge:
 
 ```bash
-npm run test:smoke              # rows 1-5, one process
+npm run test:smoke:parallel     # ROWS_PER_CHUNK=1, five chunks, five browsers
+```
+
+Each chunk keeps its real range and takes the first row of it, so the run
+covers `TC_01`, `TC_16`, `TC_31`, `TC_46` and `TC_61` rather than crowding
+`TC_01` - `TC_05` into it:
+
+| Process | Rows | Test case |
+| --- | --- | --- |
+| `chunk-1` | 1-15 | `TC_01` |
+| `chunk-2` | 16-30 | `TC_16` |
+| `chunk-3` | 31-45 | `TC_31` |
+| `chunk-4` | 46-60 | `TC_46` |
+| `chunk-5` | 61-75 | `TC_61` |
+
+Raise it for more per chunk - `ROWS_PER_CHUNK=5 npm test` runs 25 test cases,
+five per chunk in series, which exercises both the parallelism and the
+in-order run inside a chunk:
+
+```bash
+ROWS_PER_CHUNK=5 npm test
+```
+
+`ROW_LIMIT` instead trims the workbook before it is split, which suits a
+single-process run:
+
+```bash
+npm run test:smoke                # rows 1-5, one process
 ROW_LIMIT=10 npm run test:single  # rows 1-10, one process
-ROW_LIMIT=5 npm test            # rows 1-5, one per chunk (tests the split)
 ```
 
 To pick out specific test cases instead of the first N, use Codecept's own
@@ -132,7 +164,8 @@ still produces one report, one JSON and one spreadsheet for whatever ran.
 | --- | --- |
 | `CHUNK_COUNT` | Number of parallel processes (default `5`) |
 | `CHUNK` | Zero-based slice a process runs (`0` - `CHUNK_COUNT - 1`) |
-| `ROW_LIMIT` | Use only the first N workbook rows (whole run, not per chunk) |
+| `ROW_LIMIT` | Use only the first N workbook rows (whole run, before splitting) |
+| `ROWS_PER_CHUNK` | Use only the first N rows of each chunk's own range |
 | `HEADLESS` | `true` to run Chrome headless |
 | `PAUSE_ON_FAIL` | `1` to re-enable the interactive pause on failure |
 
@@ -295,7 +328,8 @@ HEADLESS=true npm test
 Run a five-row smoke test:
 
 ```bash
-npm run test:smoke
+npm run test:smoke:parallel   # 5 chunks x 1 row, in parallel
+npm run test:smoke            # rows 1-5, one process
 ```
 
 Re-merge existing chunk output without re-running the tests:
