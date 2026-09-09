@@ -8,6 +8,7 @@ const COLUMNS = [
   "Entity Name",
   "Header/CLI associated",
   "Verdict",
+  "Compliance Score",
   "Execution Status",
   "Notes",
 ];
@@ -33,6 +34,7 @@ class VerdictSummary {
       "Entity Name": "",
       "Header/CLI associated": "",
       Verdict: "N/A",
+      "Compliance Score": "N/A",
       "Execution Status": "not run",
       Notes: "",
       ...row,

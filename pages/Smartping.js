@@ -21,13 +21,13 @@ const waitTime = {
 
 // Verdict values the Compliance screen can report.
 const VERDICTS = ["PASS", "WARN", "FAIL"];
-const UNKNOWN_VERDICT = "N/A";
+const UNKNOWN = "N/A";
 
 module.exports = {
   credentials,
   waitTime,
   VERDICTS,
-  UNKNOWN_VERDICT,
+  UNKNOWN,
 
   locators: {
     inputs: {
@@ -64,6 +64,9 @@ module.exports = {
     // PASS / WARN / FAIL chip rendered next to the "Verdict" heading.
     verdictBadge:
       "(//h3[normalize-space()='Verdict']/following-sibling::span[1])[1]",
+    // The "NN" of "NN / 100 compliance" in the AI Scoring Model card.
+    complianceScore:
+      "(//span[normalize-space()='/ 100 compliance']/preceding-sibling::span[1])[1]",
   },
 
   async navigateToLogin() {
@@ -134,14 +137,32 @@ module.exports = {
    */
   async grabVerdictStatus() {
     if ((await I.grabNumberOfVisibleElements(this.locators.verdictBadge)) === 0)
-      return UNKNOWN_VERDICT;
+      return UNKNOWN;
 
     const grabbed = await I.grabTextFrom(this.locators.verdictBadge);
     // grabTextFrom returns an array when the locator matches more than once.
     const text = (Array.isArray(grabbed) ? grabbed[0] : grabbed) || "";
     const verdict = text.trim().toUpperCase();
 
-    return VERDICTS.includes(verdict) ? verdict : verdict || UNKNOWN_VERDICT;
+    return VERDICTS.includes(verdict) ? verdict : verdict || UNKNOWN;
+  },
+
+  /**
+   * Reads the "NN / 100 compliance" figure from the AI Scoring Model card,
+   * which sits below the tabs and is present on either one.
+   * @returns {Promise<number|string>} The score, or "N/A" when unreadable.
+   */
+  async grabComplianceScore() {
+    if (
+      (await I.grabNumberOfVisibleElements(this.locators.complianceScore)) === 0
+    )
+      return UNKNOWN;
+
+    const grabbed = await I.grabTextFrom(this.locators.complianceScore);
+    const text = (Array.isArray(grabbed) ? grabbed[0] : grabbed) || "";
+    const score = Number.parseInt(text.trim(), 10);
+
+    return Number.isNaN(score) ? UNKNOWN : score;
   },
 
   /**
@@ -185,7 +206,8 @@ module.exports = {
    * Overview / Findings tabs do not appear within the timeout the test case
    * fails.
    * @param {string} screenshotName - Test case id used as the file name prefix.
-   * @returns {Promise<string>} The verdict status for the report summary.
+   * @returns {Promise<{verdict: string, complianceScore: number|string}>}
+   *   The values recorded in the report summary.
    * @throws {Error} When the AI review result does not load in time.
    */
   async runAiReview(screenshotName) {
@@ -213,10 +235,16 @@ module.exports = {
     });
 
     const verdict = await this.grabVerdictStatus();
-    await I.say(`Verdict: ${verdict}`);
+    const complianceScore = await this.grabComplianceScore();
+
+    await I.say(`Verdict: ${verdict} | Compliance score: ${complianceScore}`);
     await I.addMochawesomeContext({
-      title: "Verdict status",
-      value: verdict,
+      title: "AI review result",
+      value: {
+        Verdict: verdict,
+        "Compliance Score":
+          complianceScore === UNKNOWN ? UNKNOWN : `${complianceScore} / 100`,
+      },
     });
 
     await this.captureResultTab(
@@ -238,7 +266,7 @@ module.exports = {
       `Findings tab — verdict: ${verdict}`,
     );
 
-    return verdict;
+    return { verdict, complianceScore };
   },
 
   async resetTemplateForm() {

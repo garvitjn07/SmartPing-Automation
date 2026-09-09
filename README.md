@@ -83,17 +83,18 @@ wait/click. Every test case contains:
 | --- | --- |
 | `Template details entered` | The value filled into each input field |
 | `Compliance check` | Whether the result loaded inside the timeout |
-| `Verdict status` | `PASS`, `WARN` or `FAIL` |
+| `AI review result` | The verdict and the compliance score |
 | `Overview tab — verdict: <status>` | Overview screenshot |
 | `Tab switch` | The 5 second pause between captures |
 | `Findings tab — verdict: <status>` | Findings screenshot |
 
 ## Verdict Summary
 
-The Verdict card reports a status of `PASS`, `WARN` or `FAIL`. That status is:
+The Verdict card reports a status of `PASS`, `WARN` or `FAIL`, and the AI
+Scoring Model card reports a compliance score out of 100. Both are:
 
-- shown as a step and as a **Verdict status** context entry in the HTML report,
-  and used in the caption of both screenshots;
+- shown as an **AI review result** context entry in the HTML report, with the
+  verdict also used in the caption of both screenshots;
 - collected into a spreadsheet written at the end of the run:
 
 ```text
@@ -108,6 +109,7 @@ The sheet is named `Verdict Summary` and has these columns:
 | `Entity Name` | Entity / brand under review |
 | `Header/CLI associated` | Header used for the submission |
 | `Verdict` | `PASS`, `WARN`, `FAIL`, or `N/A` when unreadable |
+| `Compliance Score` | The `/ 100` score, written as a number, or `N/A` |
 | `Execution Status` | `passed` or `failed` for the scenario itself |
 | `Notes` | Failure message when the scenario failed |
 

@@ -60,7 +60,9 @@ smartpingRows.slice(0, 3).forEach((current, rowIndex) => {
       });
 
       // Captures the Overview tab, waits, then captures the Findings tab.
-      summaryRow.Verdict = await smartpingPage.runAiReview(testCaseId);
+      const review = await smartpingPage.runAiReview(testCaseId);
+      summaryRow.Verdict = review.verdict;
+      summaryRow["Compliance Score"] = review.complianceScore;
       summaryRow["Execution Status"] = "passed";
 
       // Return to the registration form before processing the next row.
