@@ -104,12 +104,35 @@ To run all 75 rows in one process, in order, with no splitting:
 npm run test:single
 ```
 
+### Running a few rows for testing
+
+`ROW_LIMIT` trims the workbook *before* it is split, so it caps the whole run
+rather than each chunk. The shortcut runs the first five rows in one process,
+in order:
+
+```bash
+npm run test:smoke              # rows 1-5, one process
+ROW_LIMIT=10 npm run test:single  # rows 1-10, one process
+ROW_LIMIT=5 npm test            # rows 1-5, one per chunk (tests the split)
+```
+
+To pick out specific test cases instead of the first N, use Codecept's own
+`--grep` against the scenario titles:
+
+```bash
+CHUNK_COUNT=1 npx codeceptjs run --config codecept.conf.js --grep "TC_3[0-5]"
+```
+
+The merge step works the same on a trimmed run, so `npm run report:merge`
+still produces one report, one JSON and one spreadsheet for whatever ran.
+
 ### Tuning
 
 | Variable | Meaning |
 | --- | --- |
 | `CHUNK_COUNT` | Number of parallel processes (default `5`) |
 | `CHUNK` | Zero-based slice a process runs (`0` - `CHUNK_COUNT - 1`) |
+| `ROW_LIMIT` | Use only the first N workbook rows (whole run, not per chunk) |
 | `HEADLESS` | `true` to run Chrome headless |
 | `PAUSE_ON_FAIL` | `1` to re-enable the interactive pause on failure |
 
@@ -267,6 +290,12 @@ Run in headless mode:
 
 ```bash
 HEADLESS=true npm test
+```
+
+Run a five-row smoke test:
+
+```bash
+npm run test:smoke
 ```
 
 Re-merge existing chunk output without re-running the tests:

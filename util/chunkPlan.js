@@ -31,6 +31,24 @@ function chunkCount() {
   return parseCount(process.env.CHUNK_COUNT, DEFAULT_CHUNK_COUNT);
 }
 
+/**
+ * Smoke-test cap on the number of worksheet rows the run uses (ROW_LIMIT).
+ * Applied before the rows are chunked, so ROW_LIMIT=5 means five test cases in
+ * total, not five per chunk.
+ * @returns {number|null} The cap, or null when the whole workbook runs.
+ */
+function rowLimit() {
+  const raw = process.env.ROW_LIMIT;
+  if (raw === undefined || raw === "") return null;
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`Invalid ROW_LIMIT="${raw}". Expected a positive integer.`);
+  }
+
+  return parsed;
+}
+
 /** Zero-based index of the chunk this process owns (CHUNK, default 0). */
 function chunkIndex() {
   const raw = process.env.CHUNK === undefined || process.env.CHUNK === "" ? "0" : process.env.CHUNK;
@@ -87,6 +105,7 @@ module.exports = {
   PARTIAL_SUMMARY_FILE,
   chunkCount,
   chunkIndex,
+  rowLimit,
   chunkName,
   chunkOutputDir,
   chunkReportName,

@@ -5,10 +5,18 @@ const VerdictSummary = require("../util/helpers/VerdictSummary");
 const chunkPlan = require("../util/chunkPlan");
 const preReqConfig = require("../config/prerequisiteConfig.json");
 
-const smartpingRows = CommonUtils.loadXlsRowsBySheetName(
+const worksheetRows = CommonUtils.loadXlsRowsBySheetName(
   preReqConfig.dataFiles.preRequisiteFile,
   preReqConfig.dataFiles.sheetName,
 );
+
+// ROW_LIMIT trims the workbook before it is chunked, for smoke runs against a
+// handful of rows: ROW_LIMIT=5 is five test cases for the whole run, not five
+// per chunk. Unset means all 75 rows.
+const rowLimit = chunkPlan.rowLimit();
+const smartpingRows = rowLimit
+  ? worksheetRows.slice(0, rowLimit)
+  : worksheetRows;
 
 // This process owns one contiguous slice of the worksheet - 75 rows split
 // five ways gives chunk 1 rows 1-15, chunk 2 rows 16-30, and so on. Within a
@@ -22,6 +30,15 @@ const { startIndex, endIndex } = chunkPlan.rangeFor(
 );
 const chunkRows = smartpingRows.slice(startIndex, endIndex);
 
+// A low ROW_LIMIT can leave the higher chunks with nothing to do - five chunks
+// over three rows fills the first three only. Such a chunk registers no
+// scenarios and exits cleanly rather than failing the run.
+if (chunkRows.length === 0) {
+  console.log(
+    `[${chunkLabel}] no rows in this chunk (${smartpingRows.length} row(s) available) - nothing to run.`,
+  );
+}
+
 VerdictSummary.describeChunk({
   index: chunkIndex,
   name: chunkPlan.chunkName(chunkIndex),
@@ -32,12 +49,17 @@ VerdictSummary.describeChunk({
 // The row range is part of the feature name so the merged report reads as one
 // continuous 1-75 sequence instead of five identically titled suites.
 Feature(
-  `Smartping AI Review Test Suite - rows ${startIndex + 1}-${endIndex}`,
+  chunkRows.length
+    ? `Smartping AI Review Test Suite - rows ${startIndex + 1}-${endIndex}`
+    : `Smartping AI Review Test Suite - ${chunkPlan.chunkName(chunkIndex)} (no rows)`,
 );
 
 BeforeSuite(async () => {
   // Authenticate once and reuse the browser session for every row in the chunk.
-  console.log(`[${chunkLabel}] rows ${startIndex + 1}-${endIndex} (${chunkRows.length} test cases)`);
+  console.log(
+    `[${chunkLabel}] rows ${startIndex + 1}-${endIndex} (${chunkRows.length} test cases)` +
+      (rowLimit ? ` [ROW_LIMIT=${rowLimit} of ${worksheetRows.length}]` : ""),
+  );
   await smartpingPage.login();
 });
 
