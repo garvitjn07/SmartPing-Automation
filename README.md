@@ -52,49 +52,49 @@ Run in headless mode:
 HEADLESS=true npm test
 ```
 
-This splits the 75 workbook rows across five concurrent processes and then
+This splits the 75 workbook rows across four concurrent processes and then
 merges their output, so a run finishes with exactly one of each artefact:
 
 ```text
 output-smartping/smartping-report.html           merged HTML report (all 75)
 output-smartping/smartping-report.json           merged report data
 output-smartping/smartping-verdict-summary.xlsx  merged verdict summary
-output-smartping/chunk-1 .. chunk-5/             per-chunk working output
+output-smartping/chunk-1 .. chunk-4/             per-chunk working output
 ```
 
 ## Parallel Execution
 
-The suite runs as **five processes, 15 test cases each**. The rows are split
-into contiguous slices, and each process runs its own slice **in worksheet
-order** against a single browser session:
+The suite runs as **four processes, 19 test cases each** - the last one takes
+the 18 rows that remain. The rows are split into contiguous slices, and each
+process runs its own slice **in worksheet order** against a single browser
+session:
 
 | Process | Rows | Test cases |
 | --- | --- | --- |
-| `chunk-1` | 1-15 | `TC_01` - `TC_15` |
-| `chunk-2` | 16-30 | `TC_16` - `TC_30` |
-| `chunk-3` | 31-45 | `TC_31` - `TC_45` |
-| `chunk-4` | 46-60 | `TC_46` - `TC_60` |
-| `chunk-5` | 61-75 | `TC_61` - `TC_75` |
+| `chunk-1` | 1-19 | `TC_01` - `TC_19` |
+| `chunk-2` | 20-38 | `TC_20` - `TC_38` |
+| `chunk-3` | 39-57 | `TC_39` - `TC_57` |
+| `chunk-4` | 58-75 | `TC_58` - `TC_75` |
 
-Parallelism comes from running five configs at once rather than from
+Parallelism comes from running four configs at once rather than from
 `run-workers`: workers would split the rows unpredictably and each worker
 would emit its own report.
 
-`npm test` starts all five, prefixes their logs with `[chunk-N]`, waits for
+`npm test` starts all four, prefixes their logs with `[chunk-N]`, waits for
 them, then merges. It exits non-zero if any chunk had a failing test case.
 
 Each process writes into its own `output-smartping/chunk-N/` folder while it
-runs, which is what keeps five concurrent Mochawesome reporters from
+runs, which is what keeps four concurrent Mochawesome reporters from
 overwriting one another. The merge step reads those folders back **in chunk
 order**, so the single report and the single spreadsheet both run `TC_01`
 through `TC_75` top to bottom.
 
 ### Running a single chunk
 
-Useful when re-running one slice, or for debugging in five terminal windows:
+Useful when re-running one slice, or for debugging in four terminal windows:
 
 ```bash
-npm run test:chunk1     # rows 1-15   (also chunk2 .. chunk5)
+npm run test:chunk1     # rows 1-19   (also chunk2 .. chunk4)
 npm run report:merge    # merge whatever chunks have output
 ```
 
@@ -113,26 +113,25 @@ There are two caps, and they trim at different points:
 | `ROWS_PER_CHUNK` | the first N rows **of each chunk's own range** | smoke-testing the parallel run |
 | `ROW_LIMIT` | the first N rows **of the workbook**, before splitting | shortening a single-process run |
 
-To put all five chunks on the wire with one row each - the fastest full check
+To put all four chunks on the wire with one row each - the fastest full check
 of the parallel split and the merge:
 
 ```bash
-npm run test:smoke:parallel     # ROWS_PER_CHUNK=1, five chunks, five browsers
+npm run test:smoke:parallel     # ROWS_PER_CHUNK=1, four chunks, four browsers
 ```
 
 Each chunk keeps its real range and takes the first row of it, so the run
-covers `TC_01`, `TC_16`, `TC_31`, `TC_46` and `TC_61` rather than crowding
-`TC_01` - `TC_05` into it:
+covers `TC_01`, `TC_20`, `TC_39` and `TC_58` rather than crowding
+`TC_01` - `TC_04` into it:
 
 | Process | Rows | Test case |
 | --- | --- | --- |
-| `chunk-1` | 1-15 | `TC_01` |
-| `chunk-2` | 16-30 | `TC_16` |
-| `chunk-3` | 31-45 | `TC_31` |
-| `chunk-4` | 46-60 | `TC_46` |
-| `chunk-5` | 61-75 | `TC_61` |
+| `chunk-1` | 1-19 | `TC_01` |
+| `chunk-2` | 20-38 | `TC_20` |
+| `chunk-3` | 39-57 | `TC_39` |
+| `chunk-4` | 58-75 | `TC_58` |
 
-Raise it for more per chunk - `ROWS_PER_CHUNK=5 npm test` runs 25 test cases,
+Raise it for more per chunk - `ROWS_PER_CHUNK=5 npm test` runs 20 test cases,
 five per chunk in series, which exercises both the parallelism and the
 in-order run inside a chunk:
 
@@ -162,7 +161,7 @@ still produces one report, one JSON and one spreadsheet for whatever ran.
 
 | Variable | Meaning |
 | --- | --- |
-| `CHUNK_COUNT` | Number of parallel processes (default `5`) |
+| `CHUNK_COUNT` | Number of parallel processes (default `4`) |
 | `CHUNK` | Zero-based slice a process runs (`0` - `CHUNK_COUNT - 1`) |
 | `ROW_LIMIT` | Use only the first N workbook rows (whole run, before splitting) |
 | `ROWS_PER_CHUNK` | Use only the first N rows of each chunk's own range |
@@ -174,7 +173,7 @@ CHUNK_COUNT=3 npm test   # 75 rows -> 3 x 25
 ```
 
 `pauseOnFail` is off by default: a paused chunk waits for a keypress that
-never comes when five processes run unattended, which would stall the run.
+never comes when four processes run unattended, which would stall the run.
 
 ## Compliance Result Capture
 
@@ -271,7 +270,7 @@ Expected columns in the workbook:
 - `util/CommonUtils.js` - workbook loading helpers
 - `util/helpers/VerdictSummary.js` - collects verdicts and writes the summary sheet
 - `util/chunkPlan.js` - how the workbook rows are split across processes
-- `scripts/run-parallel.js` - launches the five chunks, then merges
+- `scripts/run-parallel.js` - launches the four chunks, then merges
 - `scripts/merge-reports.js` - merges the chunks into one report/JSON/spreadsheet
 - `steps_file.js` - custom step helpers
 - `codecept.conf.js` - CodeceptJS configuration (chunk-aware)
@@ -313,7 +312,7 @@ Install dependencies:
 npm install
 ```
 
-Run the suite (5 parallel chunks, then merge):
+Run the suite (4 parallel chunks, then merge):
 
 ```bash
 npm test
@@ -325,10 +324,10 @@ Run in headless mode:
 HEADLESS=true npm test
 ```
 
-Run a five-row smoke test:
+Run a short smoke test:
 
 ```bash
-npm run test:smoke:parallel   # 5 chunks x 1 row, in parallel
+npm run test:smoke:parallel   # 4 chunks x 1 row, in parallel
 npm run test:smoke            # rows 1-5, one process
 ```
 

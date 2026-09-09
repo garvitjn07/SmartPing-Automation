@@ -19,9 +19,9 @@ const smartpingRows = rowLimit
   : worksheetRows;
 
 // This process owns one contiguous slice of the worksheet - 75 rows split
-// five ways gives chunk 1 rows 1-15, chunk 2 rows 16-30, and so on. Within a
+// four ways gives chunk 1 rows 1-19, chunk 2 rows 20-38, and so on. Within a
 // chunk the rows still run one after another in sheet order, against a single
-// browser session; only the five chunks run at the same time.
+// browser session; only the four chunks run at the same time.
 const chunkIndex = chunkPlan.chunkIndex();
 const chunkLabel = `chunk ${chunkIndex + 1}/${chunkPlan.chunkCount()}`;
 const { startIndex, endIndex } = chunkPlan.rangeFor(
@@ -31,9 +31,9 @@ const { startIndex, endIndex } = chunkPlan.rangeFor(
 const fullChunkRows = smartpingRows.slice(startIndex, endIndex);
 
 // ROWS_PER_CHUNK caps how many rows this chunk runs from its own range, which
-// keeps the real 5 x 15 split intact: ROWS_PER_CHUNK=1 runs the first row of
-// every chunk - TC_01, TC_16, TC_31, TC_46, TC_61 - so a smoke run still puts
-// one browser on each slice instead of crowding the first five rows into it.
+// keeps the real four-way split intact: ROWS_PER_CHUNK=1 runs the first row of
+// every chunk - TC_01, TC_20, TC_39, TC_58 - so a smoke run still puts one
+// browser on each slice instead of crowding the first four rows into it.
 const rowsPerChunk = chunkPlan.rowsPerChunk();
 const chunkRows = rowsPerChunk
   ? fullChunkRows.slice(0, rowsPerChunk)
@@ -42,7 +42,7 @@ const chunkRows = rowsPerChunk
 // The last row this chunk actually runs, which is what the report should name.
 const lastIndex = startIndex + chunkRows.length;
 
-// A low ROW_LIMIT can leave the higher chunks with nothing to do - five chunks
+// A low ROW_LIMIT can leave the higher chunks with nothing to do - four chunks
 // over three rows fills the first three only. Such a chunk registers no
 // scenarios and exits cleanly rather than failing the run.
 if (chunkRows.length === 0) {
@@ -59,7 +59,7 @@ VerdictSummary.describeChunk({
 });
 
 // The row range is part of the feature name so the merged report reads as one
-// continuous sequence instead of five identically titled suites. It names the
+// continuous sequence instead of four identically titled suites. It names the
 // rows that actually ran, not the full range, so a capped run is not
 // mislabelled.
 Feature(
@@ -87,7 +87,7 @@ After(async () => {
 
 AfterSuite(async () => {
   // Hand this chunk's PASS / WARN / FAIL rows to the merge step, which folds
-  // all five chunks into the single summary spreadsheet.
+  // all four chunks into the single summary spreadsheet.
   const partialFile = VerdictSummary.write();
   if (!partialFile) return;
 

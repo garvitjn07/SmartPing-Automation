@@ -20,7 +20,7 @@ const SHEET_NAME = "Verdict Summary";
 /**
  * Collects the AI verdict (PASS / WARN / FAIL) of every template review.
  *
- * A chunked run has five processes collecting rows at once, so each one drops
+ * A chunked run has four processes collecting rows at once, so each one drops
  * its rows into a small JSON partial inside its own output folder rather than
  * writing a spreadsheet. `scripts/merge-reports.js` reads the partials back in
  * chunk order and writes the one spreadsheet for the whole run.

@@ -53,7 +53,7 @@ async function mergeReports(chunks) {
     return null;
   }
 
-  // Explicit file list rather than a glob: it keeps chunk-1..chunk-5 in order
+  // Explicit file list rather than a glob: it keeps chunk-1..chunk-4 in order
   // and never picks up the verdict partials sitting in the same folders.
   const merged = await merge({ files: reportFiles });
 

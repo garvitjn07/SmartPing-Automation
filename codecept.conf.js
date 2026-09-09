@@ -15,9 +15,9 @@ setCommonPlugins();
 // Enable XLS-backed data-driven scenarios.
 process.env.DATA_FROM_FILE = 1;
 
-// The suite is split across CHUNK_COUNT processes (5 by default) and this
+// The suite is split across CHUNK_COUNT processes (4 by default) and this
 // process runs the slice named by CHUNK. Every chunk writes into its own
-// output folder so five concurrent runs never fight over the same report
+// output folder so four concurrent runs never fight over the same report
 // file; `npm run report:merge` folds them into one report afterwards.
 const chunkIndex = chunkPlan.chunkIndex();
 const chunkName = chunkPlan.chunkName(chunkIndex);
@@ -96,7 +96,7 @@ exports.config = {
   plugins: {
     FileSystem: {},
     // Off by default: a paused chunk waits for a keypress that never comes
-    // when five processes run unattended, stalling the whole run. Opt in with
+    // when four processes run unattended, stalling the whole run. Opt in with
     // PAUSE_ON_FAIL=1 while debugging a single chunk.
     pauseOnFail: {
       enabled: Boolean(process.env.PAUSE_ON_FAIL),

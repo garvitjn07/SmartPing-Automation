@@ -4,8 +4,9 @@ const path = require("path");
 // while the run is in flight, then the merged report/summary at its root.
 const BASE_OUTPUT_DIR = "output-smartping";
 
-// Number of processes the suite is split across. 75 rows / 5 = 15 per chunk.
-const DEFAULT_CHUNK_COUNT = 5;
+// Number of processes the suite is split across. 75 rows over 4 chunks is 19
+// each for the first three and 18 for the last.
+const DEFAULT_CHUNK_COUNT = 4;
 
 /** Name of the merged report and summary files written at the end of a run. */
 const MERGED_REPORT_NAME = "smartping-report";
@@ -26,7 +27,7 @@ function parseCount(value, fallback) {
   return parsed;
 }
 
-/** How many chunks this run is split into (CHUNK_COUNT, default 5). */
+/** How many chunks this run is split into (CHUNK_COUNT, default 4). */
 function chunkCount() {
   return parseCount(process.env.CHUNK_COUNT, DEFAULT_CHUNK_COUNT);
 }
@@ -51,9 +52,9 @@ function rowLimit() {
 
 /**
  * Cap on how many rows each chunk runs from its own range (ROWS_PER_CHUNK).
- * Unlike ROW_LIMIT this keeps the real 5 x 15 split intact and just takes the
- * first N rows of each slice, so ROWS_PER_CHUNK=1 runs the first row of every
- * chunk - TC_01, TC_16, TC_31, TC_46, TC_61 - rather than TC_01 to TC_05.
+ * Unlike ROW_LIMIT this keeps the real four-way split intact and just takes
+ * the first N rows of each slice, so ROWS_PER_CHUNK=1 runs the first row of
+ * every chunk - TC_01, TC_20, TC_39, TC_58 - rather than TC_01 to TC_04.
  * @returns {number|null} The per-chunk cap, or null when the chunk runs in full.
  */
 function rowsPerChunk() {
@@ -102,8 +103,8 @@ function chunkReportName(index) {
 
 /**
  * Slice of the worksheet a chunk is responsible for. Chunks are contiguous, so
- * chunk 1 runs rows 1-15 in order, chunk 2 rows 16-30, and so on; the last
- * chunk absorbs whatever remains when the row count is not divisible.
+ * chunk 1 runs rows 1-19 in order, chunk 2 rows 20-38, and so on; the last
+ * chunk takes whatever remains when the row count is not divisible.
  * @param {number} index - Zero-based chunk index.
  * @param {number} totalRows - Number of data rows in the worksheet.
  * @param {number} [count] - Total number of chunks.

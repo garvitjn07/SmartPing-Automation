@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Runs the suite as CHUNK_COUNT concurrent Codecept processes (5 by default),
+ * Runs the suite as CHUNK_COUNT concurrent Codecept processes (4 by default),
  * each taking a contiguous slice of the worksheet in order, then merges their
  * output into a single report, JSON and spreadsheet.
  *
- *   npm run test:parallel            75 rows -> 5 x 15, then merge
+ *   npm run test:parallel            75 rows -> 19/19/19/18, then merge
  *   CHUNK_COUNT=3 npm run test:parallel
  *
- * Chunk output is prefixed with [chunk-N] so five interleaved logs stay
+ * Chunk output is prefixed with [chunk-N] so four interleaved logs stay
  * readable. Exits non-zero if any chunk failed.
  */
 const fs = require("fs");
