@@ -16,6 +16,13 @@ BeforeSuite(async () => {
   await smartpingPage.login();
 });
 
+After(async () => {
+  // Runs after every scenario, passed or failed, in its own step session. A row
+  // that fails mid-review must not leave the app on the Compliance page, or
+  // every row after it would fail looking for the registration inputs.
+  await smartpingPage.resetTemplateForm();
+});
+
 AfterSuite(async () => {
   // Write the PASS / WARN / FAIL summary once every row has been reviewed.
   const summaryFile = VerdictSummary.write();
@@ -64,9 +71,6 @@ smartpingRows.slice(0, 3).forEach((current, rowIndex) => {
       summaryRow.Verdict = review.verdict;
       summaryRow["Compliance Score"] = review.complianceScore;
       summaryRow["Execution Status"] = "passed";
-
-      // Return to the registration form before processing the next row.
-      await smartpingPage.resetTemplateForm();
     } catch (error) {
       summaryRow["Execution Status"] = "failed";
       summaryRow.Notes = error.message;

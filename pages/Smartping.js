@@ -269,13 +269,22 @@ module.exports = {
     return { verdict, complianceScore };
   },
 
+  /**
+   * Returns from Compliance to Entity Registration and clears the form.
+   *
+   * Best effort on purpose: this also runs after a failed row, where the app
+   * may be stranded on another screen. It must never throw, or it would mask
+   * the failure that actually broke the test case.
+   * @returns {Promise<boolean>} Whether the form was reset.
+   */
   async resetTemplateForm() {
-    // Return from Compliance to Entity Registration before clearing the form.
-    await I.clickElement(this.locators.buttons.entityRegistration);
-    await I.waitForElement(
-      this.locators.inputs.templateName,
-      waitTime.pageLoad,
-    );
-    await I.clickElement(this.locators.buttons.clearForm);
+    return tryTo(async () => {
+      await I.clickElement(this.locators.buttons.entityRegistration);
+      await I.waitForElement(
+        this.locators.inputs.templateName,
+        waitTime.pageLoad,
+      );
+      await I.clickElement(this.locators.buttons.clearForm);
+    });
   },
 };

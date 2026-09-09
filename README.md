@@ -115,6 +115,14 @@ The sheet is named `Verdict Summary` and has these columns:
 
 A verdict breakdown is also printed to the console when the suite finishes.
 
+## Recovering From a Failed Row
+
+The browser session is shared by every row, so a row that fails mid-review would
+otherwise leave the app on the Compliance screen and break every row after it.
+An `After` hook returns to Entity Registration and clears the form after every
+scenario, passed or failed. The reset is best effort and never throws, so it
+cannot mask the failure that broke the test case.
+
 ## Important Notes
 
 - The automation uses a workbook-driven flow.
