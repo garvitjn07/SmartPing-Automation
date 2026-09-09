@@ -2,17 +2,42 @@ const { I, smartpingPage } = inject();
 
 const CommonUtils = require("../util/CommonUtils");
 const VerdictSummary = require("../util/helpers/VerdictSummary");
+const chunkPlan = require("../util/chunkPlan");
 const preReqConfig = require("../config/prerequisiteConfig.json");
-
-Feature("Smartping AI Review Test Suite");
 
 const smartpingRows = CommonUtils.loadXlsRowsBySheetName(
   preReqConfig.dataFiles.preRequisiteFile,
   preReqConfig.dataFiles.sheetName,
 );
 
+// This process owns one contiguous slice of the worksheet - 75 rows split
+// five ways gives chunk 1 rows 1-15, chunk 2 rows 16-30, and so on. Within a
+// chunk the rows still run one after another in sheet order, against a single
+// browser session; only the five chunks run at the same time.
+const chunkIndex = chunkPlan.chunkIndex();
+const chunkLabel = `chunk ${chunkIndex + 1}/${chunkPlan.chunkCount()}`;
+const { startIndex, endIndex } = chunkPlan.rangeFor(
+  chunkIndex,
+  smartpingRows.length,
+);
+const chunkRows = smartpingRows.slice(startIndex, endIndex);
+
+VerdictSummary.describeChunk({
+  index: chunkIndex,
+  name: chunkPlan.chunkName(chunkIndex),
+  startIndex,
+  endIndex,
+});
+
+// The row range is part of the feature name so the merged report reads as one
+// continuous 1-75 sequence instead of five identically titled suites.
+Feature(
+  `Smartping AI Review Test Suite - rows ${startIndex + 1}-${endIndex}`,
+);
+
 BeforeSuite(async () => {
-  // Authenticate once and reuse the browser session for every XLS row.
+  // Authenticate once and reuse the browser session for every row in the chunk.
+  console.log(`[${chunkLabel}] rows ${startIndex + 1}-${endIndex} (${chunkRows.length} test cases)`);
   await smartpingPage.login();
 });
 
@@ -24,27 +49,34 @@ After(async () => {
 });
 
 AfterSuite(async () => {
-  // Write the PASS / WARN / FAIL summary once every row has been reviewed.
-  const summaryFile = VerdictSummary.write();
-  if (!summaryFile) return;
+  // Hand this chunk's PASS / WARN / FAIL rows to the merge step, which folds
+  // all five chunks into the single summary spreadsheet.
+  const partialFile = VerdictSummary.write();
+  if (!partialFile) return;
 
   const totals = VerdictSummary.verdictTotals();
   const breakdown = Object.entries(totals)
     .map(([verdict, count]) => `${verdict}: ${count}`)
     .join(" | ");
 
-  console.log(`\nVerdict summary (${breakdown})`);
-  console.log(`Saved to ${summaryFile}\n`);
+  console.log(`\n[${chunkLabel}] Verdict summary (${breakdown})`);
+  console.log(`[${chunkLabel}] Saved to ${partialFile}\n`);
 });
 
 // Define one Codecept scenario per worksheet row so Mochawesome records each
 // template review as a separate test case.
-// Temporary run limit: exercise the first five worksheet rows only. (.slice(0, 3).)
-smartpingRows.slice(0, 3).forEach((current, rowIndex) => {
+chunkRows.forEach((current, positionInChunk) => {
+  const rowIndex = startIndex + positionInChunk;
   const testCaseId =
     current.TCID || current.testCaseId || `smartping-row-${rowIndex + 2}`;
 
   Scenario(`DLT template review: ${testCaseId}`, async () => {
+    // Progress marker: the mochawesome reporter replaces Codecept's own step
+    // output, so this is what makes a long chunk readable while it runs.
+    console.log(
+      `[${chunkLabel}] ${positionInChunk + 1}/${chunkRows.length} - ${testCaseId} (row ${rowIndex + 1})`,
+    );
+
     // Registered up front so a row still appears in the summary if it fails.
     const summaryRow = VerdictSummary.record({
       TCID: testCaseId,

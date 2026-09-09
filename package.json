@@ -3,17 +3,16 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:report": "npx codeceptjs run --steps --reporter mochawesome",
-    "test:all": "codeceptjs run --steps --reporter mochawesome --reporter-options reportDir=output,reportFilename=report,inlineAssets=true,overwrite=false",
-    "test:single-file": "npm run _test:single-file --silent",
-    "_test:single-file": "TENANT_NAME=$npm_config_tenant UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME npx codeceptjs run $npm_config_filepath --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run $npm_config_filepath --reporter mochawesome --grep @${UPPER_TAG}_Tenant",
-    "test:all-files": "npm run _test:all-files --silent",
-    "_test:all-files": "TENANT_NAME=$npm_config_tenant UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant",
-    "test:multiple-files": "npm run _test:multiple-files --silent",
-    "_test:multiple-files": "TENANT_NAME=$npm_config_tenant UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME npx codeceptjs run-multiple default --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run-multiple default --reporter mochawesome --grep @${UPPER_TAG}_Tenant",
-    "test:by-usertype": "npm run _test:by-usertype --silent",
-    "_test:by-usertype": "TENANT_NAME=$npm_config_tenant USER_TYPE=$npm_config_user UPPER_TAG=$(echo $npm_config_tenant | tr '[:lower:]' '[:upper:]') && echo \"Running: TENANT_NAME=$TENANT_NAME USER_TYPE=$USER_TYPE npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant\" && npx codeceptjs run --reporter mochawesome --grep @${UPPER_TAG}_Tenant"
+    "test": "npm run test:all",
+    "test:all": "node scripts/run-parallel.js",
+    "test:parallel": "node scripts/run-parallel.js",
+    "report:merge": "node scripts/merge-reports.js",
+    "test:chunk1": "cross-env CHUNK=0 codeceptjs run --config codecept.conf.js",
+    "test:chunk2": "cross-env CHUNK=1 codeceptjs run --config codecept.conf.js",
+    "test:chunk3": "cross-env CHUNK=2 codeceptjs run --config codecept.conf.js",
+    "test:chunk4": "cross-env CHUNK=3 codeceptjs run --config codecept.conf.js",
+    "test:chunk5": "cross-env CHUNK=4 codeceptjs run --config codecept.conf.js",
+    "test:single": "cross-env CHUNK=0 CHUNK_COUNT=1 codeceptjs run --config codecept.conf.js"
   },
   "keywords": [],
   "author": "",
@@ -30,5 +29,9 @@
     "mochawesome": "7.1.3",
     "webdriverio": "^9.12.5",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "mochawesome-merge": "^5.1.1",
+    "mochawesome-report-generator": "^6.3.2"
   }
 }

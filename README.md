@@ -43,20 +43,82 @@ testdata/Smartping Sample templates 8th Sept 2026.xlsx
 Run the full suite:
 
 ```bash
-npx codeceptjs run --steps --reporter mochawesome
+npm test
 ```
 
 Run in headless mode:
 
 ```bash
-HEADLESS=true npx codeceptjs run --steps --reporter mochawesome
+HEADLESS=true npm test
 ```
 
-The generated reports and screenshots will be stored under:
+This splits the 75 workbook rows across five concurrent processes and then
+merges their output, so a run finishes with exactly one of each artefact:
 
 ```text
-output-smartping/
+output-smartping/smartping-report.html           merged HTML report (all 75)
+output-smartping/smartping-report.json           merged report data
+output-smartping/smartping-verdict-summary.xlsx  merged verdict summary
+output-smartping/chunk-1 .. chunk-5/             per-chunk working output
 ```
+
+## Parallel Execution
+
+The suite runs as **five processes, 15 test cases each**. The rows are split
+into contiguous slices, and each process runs its own slice **in worksheet
+order** against a single browser session:
+
+| Process | Rows | Test cases |
+| --- | --- | --- |
+| `chunk-1` | 1-15 | `TC_01` - `TC_15` |
+| `chunk-2` | 16-30 | `TC_16` - `TC_30` |
+| `chunk-3` | 31-45 | `TC_31` - `TC_45` |
+| `chunk-4` | 46-60 | `TC_46` - `TC_60` |
+| `chunk-5` | 61-75 | `TC_61` - `TC_75` |
+
+Parallelism comes from running five configs at once rather than from
+`run-workers`: workers would split the rows unpredictably and each worker
+would emit its own report.
+
+`npm test` starts all five, prefixes their logs with `[chunk-N]`, waits for
+them, then merges. It exits non-zero if any chunk had a failing test case.
+
+Each process writes into its own `output-smartping/chunk-N/` folder while it
+runs, which is what keeps five concurrent Mochawesome reporters from
+overwriting one another. The merge step reads those folders back **in chunk
+order**, so the single report and the single spreadsheet both run `TC_01`
+through `TC_75` top to bottom.
+
+### Running a single chunk
+
+Useful when re-running one slice, or for debugging in five terminal windows:
+
+```bash
+npm run test:chunk1     # rows 1-15   (also chunk2 .. chunk5)
+npm run report:merge    # merge whatever chunks have output
+```
+
+To run all 75 rows in one process, in order, with no splitting:
+
+```bash
+npm run test:single
+```
+
+### Tuning
+
+| Variable | Meaning |
+| --- | --- |
+| `CHUNK_COUNT` | Number of parallel processes (default `5`) |
+| `CHUNK` | Zero-based slice a process runs (`0` - `CHUNK_COUNT - 1`) |
+| `HEADLESS` | `true` to run Chrome headless |
+| `PAUSE_ON_FAIL` | `1` to re-enable the interactive pause on failure |
+
+```bash
+CHUNK_COUNT=3 npm test   # 75 rows -> 3 x 25
+```
+
+`pauseOnFail` is off by default: a paused chunk waits for a keypress that
+never comes when five processes run unattended, which would stall the run.
 
 ## Compliance Result Capture
 
@@ -96,11 +158,15 @@ Scoring Model card reports a compliance score out of 100. Both are:
 
 - shown as an **AI review result** context entry in the HTML report, with the
   verdict also used in the caption of both screenshots;
-- collected into a spreadsheet written at the end of the run:
+- collected into a single spreadsheet written at the end of the run:
 
 ```text
 output-smartping/smartping-verdict-summary.xlsx
 ```
+
+Each chunk drops its rows into a `verdict-summary.part.json` inside its own
+folder while it runs; the merge step orders those partials by row number and
+writes the one spreadsheet covering all 75 rows.
 
 The sheet is named `Verdict Summary` and has these columns:
 
@@ -148,8 +214,11 @@ Expected columns in the workbook:
 - `pages/Smartping.js` - page object / reusable actions
 - `util/CommonUtils.js` - workbook loading helpers
 - `util/helpers/VerdictSummary.js` - collects verdicts and writes the summary sheet
+- `util/chunkPlan.js` - how the workbook rows are split across processes
+- `scripts/run-parallel.js` - launches the five chunks, then merges
+- `scripts/merge-reports.js` - merges the chunks into one report/JSON/spreadsheet
 - `steps_file.js` - custom step helpers
-- `codecept.conf.js` - CodeceptJS configuration
+- `codecept.conf.js` - CodeceptJS configuration (chunk-aware)
 - `output-smartping/` - generated reports, screenshots, and verdict summary
 
 ## Git Workflow
@@ -188,14 +257,20 @@ Install dependencies:
 npm install
 ```
 
-Run the suite:
+Run the suite (5 parallel chunks, then merge):
 
 ```bash
-npx codeceptjs run --steps --reporter mochawesome
+npm test
 ```
 
 Run in headless mode:
 
 ```bash
-HEADLESS=true npx codeceptjs run --steps --reporter mochawesome
+HEADLESS=true npm test
+```
+
+Re-merge existing chunk output without re-running the tests:
+
+```bash
+npm run report:merge
 ```
